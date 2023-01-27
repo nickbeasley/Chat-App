@@ -1,20 +1,74 @@
 import React, { Component } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-
+import { GiftedChat, Bubble } from "react-native-gifted-chat";
 export default class Chat extends Component {
+  constructor() {
+    super();
+    this.state = {
+      messages: [],
+    };
+  }
+  onSend(messages = []) {
+    this.setState((previousState) => ({
+      messages: GiftedChat.append(previousState.messages, messages),
+    }));
+  }
+  renderBubble(props) {
+    return (
+      <Bubble
+        {...props}
+        wrapperStyle={{
+          right: {
+            backgroundColor: "#000",
+          },
+        }}
+      />
+    );
+  }
   componentDidMount() {
-    const name = this.props.route.params.name;
+    let name = this.props.route.params.name;
     this.props.navigation.setOptions({ title: name });
+
+    this.setState({
+      messages: [
+        {
+          _id: 1,
+          text: `${name} has entered the chat.`,
+          createdAt: new Date(),
+          system: true,
+        },
+
+        {
+          _id: 2,
+          text: `Hello ${name}! How are you?`,
+          createdAt: new Date(),
+          user: {
+            _id: 2,
+            name: "React Native",
+            avatar: "https://loremflickr.com/140/140/any",
+          },
+        },
+      ],
+    });
   }
   render() {
-    const backgroundColor = this.props.route.params.color;
+    let color = this.props.route.params.color;
     return (
-      <View style={[styles.chatContainer, { backgroundColor }]}>
-        <TouchableOpacity
-          onPress={() => this.props.navigation.navigate("Start")}
-        >
-          <Text style={{ color: "#FFF", fontSize: 24 }}>Go to Start</Text>
-        </TouchableOpacity>
+      <View style={[{ flex: 1 }, { backgroundColor: color }]}>
+        <GiftedChat
+          renderBubble={this.renderBubble.bind(this)}
+          messages={this.state.messages}
+          onSend={(messages) => this.onSend(messages)}
+          user={{
+            _id: 1,
+          }}
+          accessible={true}
+          accessibilityLabel="Chat input field"
+          accessibilityHint="Here you can enter the message. After entering the message, you can press send on the right."
+        />
+        {Platform.OS === "android" ? (
+          <KeyboardAvoidingView behavior="height" />
+        ) : null}
       </View>
     );
   }
