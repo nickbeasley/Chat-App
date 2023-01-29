@@ -1,17 +1,20 @@
 import React, { Component } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { GiftedChat, Bubble } from "react-native-gifted-chat";
+
 //import firebase
 const firebase = require("firebase");
 require("firebase/firestore");
 
+//Chat Component
 export default class Chat extends Component {
   constructor() {
     super();
     this.state = {
       messages: [],
-      iud: 0,
     };
+
+    //Connect to firebase
     if (!firebase.apps.length) {
       firebase.initializeApp({
         apiKey: "AIzaSyAYXU-uroGZ67vHPINS3khV--eZzk1hTk0",
@@ -24,30 +27,19 @@ export default class Chat extends Component {
       });
     }
     this.referenceMessagesUser = null;
-    this.addMessage = this.addMessage.bind(this);
-    onCollectionUpdate = (querySnapshot) => {
-      const messages = [];
-      querySnapshot.forEach((doc) => {
-        let data = doc.data();
-        messages.push({
-          _id: data._id,
-          text: data.text,
-          createdAt: data.createdAt.toDate(),
-          user: data.user,
-        });
-      });
-      this.setState({ messages });
-    };
+    this.referenceMessages = firebase.firestore().collection("messages");
+    this.authUnsubscribe = null;
+    this.unsubscribe = null;
   }
+
   //ComponentDidMount
   componentDidMount() {
-    this.referenceMessages = firebase.firestore().collection("messages");
     let name = this.props.route.params.name;
     let color = this.props.route.params.color;
     this.props.navigation.setOptions({ title: name, backgroundColor: color });
-    this.authUnsubscribe = firebase.auth().onAuthStateChanged((user) => {
+    this.authUnsubscribe = firebase.auth().onAuthStateChanged(async (user) => {
       if (!user) {
-        firebase.auth().signInAnonymously();
+        user = await firebase.auth().signInAnonymously();
       }
       this.setState({
         uid: user?.uid,
@@ -58,10 +50,28 @@ export default class Chat extends Component {
         .onSnapshot(this.onCollectionUpdate);
     });
   }
+
+  //OnCollectionUpdate
+  onCollectionUpdate = (querySnapshot) => {
+    const messages = [];
+    querySnapshot.forEach((doc) => {
+      let data = doc.data();
+      messages.push({
+        _id: data._id,
+        text: data.text,
+        createdAt: data.createdAt.toDate(),
+        user: data.user,
+      });
+    });
+    this.setState({ messages });
+  };
+
   //ComponentWillUnmount
   componentWillUnmount() {
     this.authUnsubscribe();
+    this.unsubscribe();
   }
+
   //AddMessage
   addMessage = () => {
     const message = this.state.messages[0];
@@ -72,6 +82,7 @@ export default class Chat extends Component {
       user: message.user,
     });
   };
+
   //OnSend
   onSend(messages = []) {
     this.setState(
@@ -83,6 +94,7 @@ export default class Chat extends Component {
       }
     );
   }
+
   //RenderBubble
   renderBubble(props) {
     return (
@@ -99,7 +111,8 @@ export default class Chat extends Component {
       />
     );
   }
-  //Render
+
+  //Render method
   render() {
     let color = this.props.route.params.color;
     return (
@@ -124,6 +137,7 @@ export default class Chat extends Component {
     );
   }
 }
+
 //Styles
 const styles = StyleSheet.create({
   container: {
