@@ -125,7 +125,8 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 45,
     fontWeight: "600",
-    color: "#fff",
+    color: "darkgreen",
+    padding: 10,
   },
 
   text: {
