@@ -1,6 +1,8 @@
 import React, { Component } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { GiftedChat, Bubble } from "react-native-gifted-chat";
+import { GiftedChat, Bubble, InputToolbar } from "react-native-gifted-chat";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import NetInfo from "@react-native-community/netinfo";
 
 //import firebase
 const firebase = require("firebase");
@@ -11,7 +13,12 @@ export default class Chat extends Component {
   constructor() {
     super();
     this.state = {
+      uid: 0,
       messages: [],
+      user: {
+        _id: "",
+        name: "",
+      },
     };
 
     //Connect to firebase
@@ -34,23 +41,78 @@ export default class Chat extends Component {
 
   //ComponentDidMount
   componentDidMount() {
+    //Check if user is online
+    NetInfo.fetch().then((connection) => {
+      if (connection.isConnected) {
+        this.setState({
+          isConnected: true,
+        });
+      } else {
+        this.setState({
+          isConnected: false,
+        });
+      }
+    });
+    //Get messages
+    this.getMessages();
+    //Get user name and color
     let name = this.props.route.params.name;
     let color = this.props.route.params.color;
     this.props.navigation.setOptions({ title: name, backgroundColor: color });
+    //Check if user is logged in
     this.authUnsubscribe = firebase.auth().onAuthStateChanged(async (user) => {
       if (!user) {
-        user = await firebase.auth().signInAnonymously();
+        return await firebase.auth().signInAnonymously();
       }
+      //Update user state with currently active user data
       this.setState({
         uid: user?.uid,
         messages: [],
+        user: {
+          _id: user.uid,
+          name: name,
+        },
       });
+      //Create reference to messages
       this.unsubscribe = this.referenceMessages
         .orderBy("createdAt", "desc")
         .onSnapshot(this.onCollectionUpdate);
     });
   }
-
+  //get messages
+  async getMessages() {
+    let messages = "";
+    try {
+      messages = (await AsyncStorage.getItem("messages")) || [];
+      this.setState({
+        messages: JSON.parse(messages),
+      });
+    } catch (error) {
+      console.log(error.message);
+    }
+  }
+  //save messages
+  async saveMessages() {
+    try {
+      await AsyncStorage.setItem(
+        "messages",
+        JSON.stringify(this.state.messages)
+      );
+    } catch (error) {
+      console.log(error.message);
+    }
+  }
+  //delete messages
+  async deleteMessages() {
+    try {
+      await AsyncStorage.removeItem("messages");
+      this.setState({
+        messages: [],
+      });
+    } catch (error) {
+      console.log(error.message);
+    }
+  }
   //OnCollectionUpdate
   onCollectionUpdate = (querySnapshot) => {
     const messages = [];
@@ -60,7 +122,10 @@ export default class Chat extends Component {
         _id: data._id,
         text: data.text,
         createdAt: data.createdAt.toDate(),
-        user: data.user,
+        user: {
+          _id: data.user._id,
+          name: data.user.name,
+        },
       });
     });
     this.setState({ messages });
@@ -90,6 +155,7 @@ export default class Chat extends Component {
         messages: GiftedChat.append(previousState.messages, messages),
       }),
       () => {
+        this.saveMessages();
         this.addMessage();
       }
     );
@@ -111,6 +177,13 @@ export default class Chat extends Component {
       />
     );
   }
+  //Render Input Toolbar
+  renderInputToolbar(props) {
+    if (this.state.isConnected === false) {
+    } else {
+      return <InputToolbar {...props} />;
+    }
+  }
 
   //Render method
   render() {
@@ -121,11 +194,10 @@ export default class Chat extends Component {
         <GiftedChat
           style={styles.item}
           renderBubble={this.renderBubble.bind(this)}
+          renderInputToolbar={this.renderInputToolbar.bind(this)}
           messages={this.state.messages}
           onSend={(messages) => this.onSend(messages)}
-          user={{
-            _id: 1,
-          }}
+          user={this.state.user}
           accessible={true}
           accessibilityLabel="Chat input field"
           accessibilityHint="Here you can enter the message. After entering the message, you can press send on the right."
