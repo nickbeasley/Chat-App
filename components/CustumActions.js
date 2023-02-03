@@ -6,11 +6,13 @@ import * as Permissions from "expo-permissions";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 
+//import firebase
 const firebase = require("firebase");
 require("firebase/firestore");
+
 // CustomActions Component
 export default class CustomActions extends React.Component {
-  pickImage = async () => {
+  pickImage = async (assets) => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     try {
       if (status === "granted") {
@@ -19,7 +21,7 @@ export default class CustomActions extends React.Component {
         }).catch((error) => console.log(error));
 
         if (!result.canceled) {
-          const imageUrl = await this.uploadImageFetch(result.uri);
+          const imageUrl = await this.uploadImageFetch(result.assests);
           this.props.onSend({ image: imageUrl });
         }
       }
@@ -27,8 +29,9 @@ export default class CustomActions extends React.Component {
       console.log(error.message);
     }
   };
+
   // Take a photo with the camera
-  takePhoto = async () => {
+  takePhoto = async (assets) => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     try {
       if (status === "granted") {
@@ -37,7 +40,7 @@ export default class CustomActions extends React.Component {
         }).catch((error) => console.log(error));
 
         if (!result.canceled) {
-          const imageUrl = await this.uploadImageFetch(result.uri);
+          const imageUrl = await this.uploadImageFetch(result.assets);
           this.props.onSend({ image: imageUrl });
         }
       }
@@ -45,6 +48,7 @@ export default class CustomActions extends React.Component {
       console.log(error.message);
     }
   };
+
   // Get the user's location
   getLocation = async () => {
     try {
@@ -67,7 +71,7 @@ export default class CustomActions extends React.Component {
     }
   };
   // Upload image to firebase
-  uploadImageFetch = async (uri) => {
+  uploadImageFetch = async (assets) => {
     const blob = await new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.onload = function () {
@@ -78,11 +82,11 @@ export default class CustomActions extends React.Component {
         reject(new TypeError("Network request failed"));
       };
       xhr.responseType = "blob";
-      xhr.open("GET", uri, true);
+      xhr.open("GET", assets, true);
       xhr.send(null);
     });
 
-    const imageNameBefore = uri.split("/");
+    // const imageNameBefore = uri.split("/");
     const imageName = imageNameBefore[imageNameBefore.length - 1];
 
     const ref = firebase.storage().ref().child(`images/${imageName}`);
@@ -93,6 +97,7 @@ export default class CustomActions extends React.Component {
 
     return await snapshot.ref.getDownloadURL();
   };
+
   // Show the action sheet
   onActionPress = () => {
     const options = [
@@ -115,7 +120,7 @@ export default class CustomActions extends React.Component {
         switch (buttonIndex) {
           case 0:
             console.log("user wants to pick an image");
-            return this.imagePicker();
+            return this.pickImage();
           case 1:
             console.log("user wants to take a photo");
             return this.takePhoto();
@@ -169,3 +174,4 @@ const styles = StyleSheet.create({
 CustomActions.contextTypes = {
   actionSheet: PropTypes.func,
 };
+CustomActions = connectActionSheet(CustomActions);

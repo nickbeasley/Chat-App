@@ -27,7 +27,7 @@ export default class Chat extends Component {
       uid: 0,
       messages: [],
       user: {
-        _id: "",
+        _id: 0,
         name: "",
       },
       image: null,
