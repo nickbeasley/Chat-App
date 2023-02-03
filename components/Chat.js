@@ -1,8 +1,19 @@
 import React, { Component } from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Button,
+  Image,
+  StyleSheet,
+} from "react-native";
 import { GiftedChat, Bubble, InputToolbar } from "react-native-gifted-chat";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import NetInfo from "@react-native-community/netinfo";
+import * as Location from "expo-location";
+import MapView from "react-native-maps";
+import CustomActions from "./CustumActions";
+import { ActionSheetProvider } from "@expo/react-native-action-sheet";
 
 //import firebase
 const firebase = require("firebase");
@@ -19,6 +30,9 @@ export default class Chat extends Component {
         _id: "",
         name: "",
       },
+      image: null,
+      location: null,
+      isConnected: false,
     };
 
     //Connect to firebase
@@ -126,6 +140,8 @@ export default class Chat extends Component {
           _id: data.user._id,
           name: data.user.name,
         },
+        image: data.image || null,
+        location: data.location || null,
       });
     });
     this.setState({ messages });
@@ -184,6 +200,28 @@ export default class Chat extends Component {
       return <InputToolbar {...props} />;
     }
   }
+  // Render Custom Actions
+  renderCustomActions = (props) => {
+    return <CustomActions {...props} />;
+  };
+  // Render Custom View
+  renderCustomView(props) {
+    const { currentMessage } = props;
+    if (currentMessage.location) {
+      return (
+        <MapView
+          style={{ width: 150, height: 100, borderRadius: 13, margin: 3 }}
+          region={{
+            latitude: currentMessage.location.latitude,
+            longitude: currentMessage.location.longitude,
+            latitudeDelta: 0.0922,
+            longitudeDelta: 0.0421,
+          }}
+        />
+      );
+    }
+    return null;
+  }
 
   //Render method
   render() {
@@ -195,6 +233,8 @@ export default class Chat extends Component {
           style={styles.item}
           renderBubble={this.renderBubble.bind(this)}
           renderInputToolbar={this.renderInputToolbar.bind(this)}
+          renderActions={this.renderCustomActions}
+          renderCustomView={this.renderCustomView}
           messages={this.state.messages}
           onSend={(messages) => this.onSend(messages)}
           user={this.state.user}
