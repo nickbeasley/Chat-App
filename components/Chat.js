@@ -14,6 +14,7 @@ import * as Location from "expo-location";
 import MapView from "react-native-maps";
 import CustomActions from "./CustomActions";
 import { ActionSheetProvider } from "@expo/react-native-action-sheet";
+import { Constants, Permissions } from "expo";
 
 //import firebase
 const firebase = require("firebase");
@@ -129,6 +130,7 @@ export default class Chat extends Component {
   }
   //OnCollectionUpdate
   onCollectionUpdate = (querySnapshot) => {
+    if (!this.state.isConnected) return;
     const messages = [];
     querySnapshot.forEach((doc) => {
       let data = doc.data();
@@ -152,7 +154,22 @@ export default class Chat extends Component {
     this.authUnsubscribe();
     this.unsubscribe();
   }
-
+  // Check if user is online
+  handleConnectivityChange = (state) => {
+    const isConnected = state.isConnected;
+    if (isConnected == true) {
+      this.setState({
+        isConnected: true,
+      });
+      this.unsubscribe = this.referenceChatMessages
+        .orderBy("createdAt", "desc")
+        .onSnapshot(this.onCollectionUpdate);
+    } else {
+      this.setState({
+        isConnected: false,
+      });
+    }
+  };
   //AddMessage
   addMessage = () => {
     const message = this.state.messages[0];
@@ -161,6 +178,8 @@ export default class Chat extends Component {
       text: message.text || "",
       createdAt: message.createdAt,
       user: message.user,
+      image: message.image || null,
+      location: message.location || null,
     });
   };
 
@@ -176,7 +195,12 @@ export default class Chat extends Component {
       }
     );
   }
-
+  //define title in navigation bar
+  static navigationOptions = ({ navigation }) => {
+    return {
+      title: `${navigation.state.params.userName}'s Chat`,
+    };
+  };
   //RenderBubble
   renderBubble(props) {
     return (
@@ -201,9 +225,7 @@ export default class Chat extends Component {
     }
   }
   // Render Custom Actions
-  renderCustomActions = (props) => {
-    return <CustomActions {...props} />;
-  };
+  renderCustomActions = (props) => <CustomActions {...props} />;
   // Render Custom View
   renderCustomView(props) {
     const { currentMessage } = props;
@@ -233,7 +255,7 @@ export default class Chat extends Component {
           style={styles.item}
           renderBubble={this.renderBubble.bind(this)}
           renderInputToolbar={this.renderInputToolbar.bind(this)}
-          renderActions={this.renderCustomActions}
+          renderActions={this.renderCustomActions.bind(this)}
           renderCustomView={this.renderCustomView}
           messages={this.state.messages}
           onSend={(messages) => this.onSend(messages)}
