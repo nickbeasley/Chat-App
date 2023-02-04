@@ -12,7 +12,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import NetInfo from "@react-native-community/netinfo";
 import * as Location from "expo-location";
 import MapView from "react-native-maps";
-import CustomActions from "./CustumActions";
+import CustomActions from "./CustomActions";
 import { ActionSheetProvider } from "@expo/react-native-action-sheet";
 
 //import firebase

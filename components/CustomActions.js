@@ -12,7 +12,7 @@ require("firebase/firestore");
 
 // CustomActions Component
 export default class CustomActions extends React.Component {
-  pickImage = async (assets) => {
+  pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     try {
       if (status === "granted") {
@@ -31,7 +31,7 @@ export default class CustomActions extends React.Component {
   };
 
   // Take a photo with the camera
-  takePhoto = async (assets) => {
+  takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     try {
       if (status === "granted") {
