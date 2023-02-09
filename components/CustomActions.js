@@ -13,16 +13,16 @@ require("firebase/firestore");
 // CustomActions Component
 export default class CustomActions extends React.Component {
   // Pick an image from the library
-  pickImage = async () => {
+  imagePicker = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     try {
       if (status === "granted") {
         let result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: "Images",
         }).catch((error) => console.log(error));
-
-        if (!result.canceled) {
-          const imageUrl = await this.uploadImageFetch(result.assests);
+        // canceled process
+        if (!result.cancelled) {
+          const imageUrl = await this.uploadImageFetch(result.uri);
           this.props.onSend({ image: imageUrl });
         }
       }
@@ -41,7 +41,7 @@ export default class CustomActions extends React.Component {
         }).catch((error) => console.log(error));
 
         if (!result.canceled) {
-          const imageUrl = await this.uploadImageFetch(result.assets);
+          const imageUrl = await this.uploadImageFetch(result.uri);
           this.props.onSend({ image: imageUrl });
         }
       }
@@ -102,21 +102,17 @@ export default class CustomActions extends React.Component {
       "Send Location",
       "Cancel",
     ];
-
-    console.log("Custom actions button pressed");
-
     const cancelButtonIndex = options.length - 1;
     this.props.showActionSheetWithOptions(
       {
         options,
         cancelButtonIndex,
       },
-
       async (buttonIndex) => {
         switch (buttonIndex) {
           case 0:
             console.log("user wants to pick an image");
-            return this.pickImage();
+            return this.imagePicker();
           case 1:
             console.log("user wants to take a photo");
             return this.takePhoto();
