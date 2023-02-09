@@ -21,7 +21,7 @@ export default class CustomActions extends React.Component {
           mediaTypes: "Images",
         }).catch((error) => console.log(error));
         // canceled process
-        if (!result.cancelled) {
+        if (!result.canceled) {
           const imageUrl = await this.uploadImageFetch(result.uri);
           this.props.onSend({ image: imageUrl });
         }
